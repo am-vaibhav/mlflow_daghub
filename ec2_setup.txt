@@ -1,0 +1,44 @@
+chmod 400 mlflow_demo.pem
+ssh -i your-key.pem ubuntu@<EC2_PUBLIC_IP>
+sudo apt update
+sudo apt upgrade -y
+sudo apt install python3 python3-pip python3-venv awscli -y
+mkdir mlflow
+cd mlflow
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install mlflow boto3
+
+aws configure
+AWS Access Key ID [None]: <YOUR_AWS_ACCESS_KEY>
+AWS Secret Access Key [None]: <YOUR_AWS_SECRET_KEY>
+Default region name [None]: us-west-2
+Default output format [None]:
+
+
+mkdir -p mlruns logs
+
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+mlflow server \
+    --backend-store-uri sqlite:///home/ubuntu/mlflow/mlflow.db \
+    --artifacts-destination s3://mlflowlearningartifacts \
+    --host 0.0.0.0 \
+    --port 80 \
+    --workers 1 \
+    --allowed-hosts '*'
+    ##--allowed-hosts "34.209.24.177"
+
+
+Port 80 (HTTP) is open to 0.0.0.0/0 in the security group by default.
+No need to open a custom port.
+
+Open:
+http://<EC2_PUBLIC_IP>
+You should see the MLflow UI.
+
+
