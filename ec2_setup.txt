@@ -11,8 +11,8 @@ pip install --upgrade pip
 pip install mlflow boto3
 
 aws configure
-AWS Access Key ID [None]: <YOUR_AWS_ACCESS_KEY>
-AWS Secret Access Key [None]: <YOUR_AWS_SECRET_KEY>
+AWS Access Key ID [None]:
+AWS Secret Access Key [None]:
 Default region name [None]: us-west-2
 Default output format [None]:
 
