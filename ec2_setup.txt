@@ -18,18 +18,33 @@ sudo chmod 600 /swapfile
 sudo mkswap /swapfile
 sudo swapon /swapfile
 
-mlflow server \
+## Copy AWS credentials to root (only needed if running on port 80 with sudo)
+## sudo requires root access for ports below 1024
+## aws configure saves credentials in /home/ubuntu/.aws/ but sudo looks in /root/.aws/
+sudo mkdir -p /root/.aws
+sudo cp /home/ubuntu/.aws/credentials /root/.aws/credentials
+sudo cp /home/ubuntu/.aws/config /root/.aws/config
+
+## Start MLflow server
+## Use sudo only if port < 1024 (e.g. port 80). For port 5000+, sudo is not needed.
+## --allowed-hosts '*' : allows requests from any Host header (public IP, localhost, etc.)
+##                       without this, MLflow blocks requests from public IPs as DNS rebinding protection
+## --cors-allowed-origins : needed only when accessing UI from a browser via public IP
+##                          without this, browser AJAX requests get 403 Forbidden
+##                          not needed if accessing via localhost (e.g. SSH tunnel)
+sudo /home/ubuntu/mlflow/venv/bin/mlflow server \
     --backend-store-uri sqlite:///home/ubuntu/mlflow/mlflow.db \
     --artifacts-destination s3://mlflowlearningartifacts \
     --host 0.0.0.0 \
     --port 80 \
     --workers 1 \
-    --allowed-hosts '*'
-    ##--allowed-hosts "34.209.24.177"
+    --allowed-hosts '*' \
+    --cors-allowed-origins 'http://<EC2_PUBLIC_IP>'
 
 
 Port 80 (HTTP) is open to 0.0.0.0/0 in the security group by default.
 No need to open a custom port.
+If using port 5000, add an inbound rule: Custom TCP, Port 5000, Source: My IP
 
 Open:
 http://<EC2_PUBLIC_IP>
