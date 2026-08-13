@@ -1,7 +1,7 @@
 import mlflow.sklearn
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
@@ -22,8 +22,8 @@ n_estimators = 100
 max_depth = 5
 
 with mlflow.start_run():
-    model = RandomForestClassifier(
-        n_estimators=n_estimators, max_depth=max_depth, random_state=23
+    model = DecisionTreeClassifier(
+        max_depth=max_depth, random_state=23
     )
     model.fit(X_train, y_train)
     predictions = model.predict(X_test)
@@ -31,11 +31,10 @@ with mlflow.start_run():
     accuracy = accuracy_score(y_test, predictions)
     f1 = f1_score(y_test, predictions, average="weighted")
 
-    mlflow.log_param("n_estimators", n_estimators)
     mlflow.log_param("max_depth", max_depth)
     mlflow.log_metric("accuracy", accuracy)
     mlflow.log_metric("f1_score", f1)
-    mlflow.sklearn.log_model(model, name="random_forest_model")
+    mlflow.sklearn.log_model(model, name="decision_tree_model")
 
     cm = confusion_matrix(y_test, predictions)
     plt.figure(figsize=[10, 5])
@@ -47,7 +46,7 @@ with mlflow.start_run():
     mlflow.log_artifact("confusion_matrix.png")
 
     mlflow.log_artifact(__file__)
-    mlflow.set_tag("author","vaibhav")
-    mlflow.set_tag("model","random_forest")
+    mlflow.set_tag("author","ankit")
+    mlflow.set_tag("model","decision_tree")
     print(f"Accuracy: {accuracy:.4f}")
     print(f"F1 Score: {f1:.4f}")

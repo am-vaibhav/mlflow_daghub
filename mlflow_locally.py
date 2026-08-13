@@ -6,16 +6,13 @@ from sklearn.metrics import accuracy_score, f1_score
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
-import dagshub
-dagshub.init(repo_owner='vaibhav.vaibhav.rai009', repo_name='mlflow_daghub', mlflow=True)
-
-mlflow.set_tracking_uri("https://dagshub.com/vaibhav.vaibhav.rai009/mlflow_daghub.mlflow")
 
 iris = load_iris()
 X_train, X_test, y_train, y_test = train_test_split(
     iris.data, iris.target, test_size=0.2, random_state=42
 )
 
+mlflow.set_tracking_uri("sqlite:///mlflow.db")
 mlflow.set_experiment("iris-classification")
 
 n_estimators = 100
