@@ -11,7 +11,6 @@ pip install --upgrade pip
 pip install mlflow boto3
 
 
-
 mkdir -p mlruns logs
 
 sudo fallocate -l 2G /swapfile
