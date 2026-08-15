@@ -11,7 +11,7 @@ iris = load_iris()
 X_train, X_test, y_train, y_test = train_test_split(
     iris.data, iris.target, test_size=0.2, random_state=42
 )
-
+mlflow.autolog()
 mlflow.set_tracking_uri("sqlite:///mlflow.db")
 mlflow.set_experiment("iris-classification")
 
@@ -28,12 +28,6 @@ with mlflow.start_run():
     accuracy = accuracy_score(y_test, predictions)
     f1 = f1_score(y_test, predictions, average="weighted")
 
-    mlflow.log_param("n_estimators", n_estimators)
-    mlflow.log_param("max_depth", max_depth)
-    mlflow.log_metric("accuracy", accuracy)
-    mlflow.log_metric("f1_score", f1)
-    mlflow.sklearn.log_model(model, name="random_forest_model")
-
     cm = confusion_matrix(y_test, predictions)
     plt.figure(figsize=[10, 5])
     sns.heatmap(cm, annot=True, cmap="Blues", fmt="g")
@@ -41,19 +35,6 @@ with mlflow.start_run():
     plt.xlabel("Predicted")
     plt.ylabel("Actual")
     plt.savefig("confusion_matrix.png")
-    mlflow.log_artifact("confusion_matrix.png")
 
-    mlflow.log_artifact(__file__)
-    mlflow.set_tag("author","vaibhav")
-    mlflow.set_tag("model","random_forest")
-
-    train_df = X_train.copy()
-    train_df["variety"] = y_train.values()
-    test_df = X_test.copy()
-    test_df["variety"] = y_test.values()
-    train_df = mlflow.data.from_pandas(train_df)
-    test_df = mlflow.data.from_pandas(test_df)
-    mlflow.log_input(train_df, "train_df")
-    mlflow.log_input(test_df, "test_df")
     print(f"Accuracy: {accuracy:.4f}")
     print(f"F1 Score: {f1:.4f}")
