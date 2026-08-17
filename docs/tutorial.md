@@ -18,6 +18,8 @@ mlflow/
 ├── docs/
 │   └── tutorial.md              # This tutorial
 ├── mlflow_locally.py            # Local experiment (SQLite backend)
+├── mlflow_aws.py                # Remote experiment (EC2 MLflow server)
+├── autolog.py                   # Autologging demo (no manual log calls)
 ├── dagshub_decision_tree.py     # DagsHub remote tracking (Decision Tree)
 ├── train.py                     # DagsHub remote tracking (Random Forest)
 ├── ec2_setup.txt                # Steps to deploy MLflow server on AWS EC2
@@ -163,24 +165,71 @@ This sends all params, metrics, and artifacts to DagsHub's remote MLflow server 
 
 ---
 
-## 5. Deploying MLflow on AWS EC2
+## 5. Autologging
 
-See `ec2_setup.txt` for full steps. Summary:
+**File:** `autolog.py`
 
-1. Launch an EC2 instance (Ubuntu)
+Instead of manually calling `log_param()`, `log_metric()`, `log_model()`, MLflow can auto-log everything.
+
+```python
+mlflow.autolog()
+```
+
+- Automatically logs parameters, metrics, and the model for supported libraries (sklearn, xgboost, pytorch, etc.)
+- Must be called **before** `model.fit()`
+- No need for manual `log_param()` or `log_metric()` calls
+- Still works inside `with mlflow.start_run():`
+
+---
+
+## 6. Remote Tracking with AWS EC2
+
+**Files:** `mlflow_aws.py`, `ec2_setup.txt`
+
+### Client-Side Code
+
+```python
+mlflow.set_tracking_uri("http://<EC2_PUBLIC_IP>")
+mlflow.set_experiment("iris-classification")
+```
+
+Only the tracking URI changes. All logging code stays the same.
+
+### Server Setup (see `ec2_setup.txt` for full steps)
+
+1. Launch EC2 instance (Ubuntu, t3.small minimum)
 2. Install Python, pip, mlflow, boto3
 3. Configure AWS CLI for S3 artifact storage
-4. Run the MLflow server:
+4. Add swap space (needed for t3.small with 2GB RAM)
+5. Run the MLflow server:
 
 ```bash
-mlflow server \
+sudo mlflow server \
     --backend-store-uri sqlite:///home/ubuntu/mlflow/mlflow.db \
     --artifacts-destination s3://your-bucket-name \
     --host 0.0.0.0 \
-    --port 80
+    --port 80 \
+    --workers 1 \
+    --allowed-hosts '*' \
+    --cors-allowed-origins 'http://<EC2_PUBLIC_IP>'
 ```
 
-5. Access the UI at `http://<EC2_PUBLIC_IP>`
+6. Access the UI at `http://<EC2_PUBLIC_IP>`
+
+### Key Server Flags
+
+| Flag | Why It's Needed |
+|---|---|
+| `--allowed-hosts '*'` | MLflow blocks requests from public IPs by default (DNS rebinding protection). Without this, browser requests get 403. |
+| `--cors-allowed-origins` | Browser AJAX requests include an Origin header. Without this, the UI's POST requests (search runs, etc.) get 403. Not needed if using SSH tunnel. |
+| `--workers 1` | Reduces memory usage on small instances. Default is 4. |
+| `sudo` | Required for port 80 (ports < 1024 need root). Not needed for port 5000+. |
+
+### Gotchas
+
+- **sudo + AWS credentials**: `aws configure` saves creds in `/home/ubuntu/.aws/`, but sudo runs as root and looks in `/root/.aws/`. Copy them: `sudo cp /home/ubuntu/.aws/* /root/.aws/`
+- **Swap space**: t3.small (2GB RAM) gets OOM-killed by MLflow's worker processes. Add 2GB swap before starting.
+- **ISP blocking**: Some ISPs block non-standard ports (5000). Use port 80 instead, or SSH tunnel: `ssh -L 5000:localhost:5000 ubuntu@<IP>`
 
 ### Architecture
 
@@ -194,7 +243,7 @@ Client (your laptop)
 
 ---
 
-## 6. Backend Store vs Artifact Store
+## 7. Backend Store vs Artifact Store
 
 | | Backend Store | Artifact Store |
 |---|---|---|
@@ -206,7 +255,7 @@ Client (your laptop)
 
 ---
 
-## 7. Common MLflow Commands
+## 8. Common MLflow Commands
 
 ```bash
 # Launch UI locally
@@ -227,7 +276,7 @@ mlflow experiments search
 
 ---
 
-## 8. Workflow Summary
+## 9. Workflow Summary
 
 ```
 1. Write training script
